@@ -1,0 +1,160 @@
+
+
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none text-muted">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none text-muted">Sheep List</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Tag {{ record.ear_tag_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        {% if record.sex == 'MALE' %}
+                            <div class="avatar-circle bg-primary bg-opacity-10 text-primary mx-auto">
+                                <i class="bi bi-gender-male display-4"></i>
+                            </div>
+                        {% else %}
+                            <div class="avatar-circle bg-danger bg-opacity-10 text-danger mx-auto">
+                                <i class="bi bi-gender-female display-4"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <h2 class="fw-bold mb-1">{{ record.ear_tag_number }}</h2>
+                    <p class="text-muted mb-3 text-uppercase small fw-bold">{{ record.type }}</p>
+                    
+                    <div class="mb-4">
+                        {% if record.is_healthy %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill border border-success border-opacity-25">
+                                <i class="bi bi-check-circle-fill me-1"></i> Healthy
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill border border-danger border-opacity-25">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i> Attention Needed
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4 text-muted opacity-25">
+
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'update_record' sheep_record.ear_tag_number%}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil-square me-2"></i> Edit Profile
+                        </a>
+                        <a href="{% url 'delete_record' sheep_record.ear_tag_number%}" class="btn btn-outline-danger" onclick="return confirm('Are you sure? This cannot be undone.');">
+                            <i class="bi bi-trash me-2"></i> Delete Record
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-clipboard-data me-2"></i>Detailed Specifications</h5>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <h6 class="text-uppercase text-secondary small fw-bold mb-3 border-bottom pb-2">Genetics & Breed</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label class="text-muted small d-block">Primary Breed</label>
+                            <span class="fs-5 fw-semibold text-dark">{{ record.breed }}</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small d-block">Purity Level</label>
+                            <div class="d-flex align-items-center">
+                                <span class="fs-5 fw-semibold text-dark me-2">{{ record.blood_level }}%</span>
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ record.blood_level }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="text-uppercase text-secondary small fw-bold mb-3 border-bottom pb-2 pt-2">Growth Metrics</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-4">
+                            <label class="text-muted small d-block">Date of Birth</label>
+                            <span class="text-dark fw-medium">
+                                <i class="bi bi-calendar-event me-1 text-muted"></i>
+                                {{ record.date_of_birth|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="text-muted small d-block">Birth Weight</label>
+                            <span class="text-dark fw-medium">
+                                {% if record.birth_weight %}
+                                    {{ record.birth_weight }} kg
+                                {% else %}
+                                    <span class="text-muted fst-italic">--</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="text-muted small d-block">Age</label>
+                            <span class="text-dark">
+                                {{ record.date_of_birth|timesince }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h6 class="text-uppercase text-secondary small fw-bold mb-3 border-bottom pb-2 pt-2">Lineage</h6>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center p-3 border rounded bg-light">
+                                <div class="bg-white p-2 rounded-circle shadow-sm me-3 text-primary">
+                                    <i class="bi bi-gender-male fs-5"></i>
+                                </div>
+                                <div>
+                                    <label class="text-muted small d-block mb-0 text-uppercase">Sire (Father)</label>
+                                    <span class="fw-bold text-dark">
+                                        {{ record.parent_ram.ear_tag_number|default:"Unknown Record" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center p-3 border rounded bg-light">
+                                <div class="bg-white p-2 rounded-circle shadow-sm me-3 text-danger">
+                                    <i class="bi bi-gender-female fs-5"></i>
+                                </div>
+                                <div>
+                                    <label class="text-muted small d-block mb-0 text-uppercase">Dam (Mother)</label>
+                                    <span class="fw-bold text-dark">
+                                        {{ record.parent_ewe.ear_tag_number|default:"Unknown Record" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}

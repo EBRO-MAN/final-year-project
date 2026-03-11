@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load custom_filters %} 
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Breeding Assignment Task</h1>
+        <a href="{% url 'breeding_selection' %}" class="btn btn-outline-secondary">Back to Selection</a>
+    </div>
+
+    <form method="post" id="breeding-task-form">
+        {% csrf_token %}
+        <input type="hidden" id="breedingAssignments" name="breedingAssignments" value='{{ initial_assignments_json }}'>
+
+        <div class="row">
+            {% for ram in rams %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">{{ ram.ear_tag_number }}</h5>
+                            <small>{{ ram.breed }}</small>
+                        </div>
+                        <span class="badge bg-light text-primary" id="capacity-badge-{{ ram.ear_tag_number }}">
+                            Loading...
+                        </span>
+                    </div>
+                    
+                    <div class="card-body bg-light">
+                        <h6 class="text-muted border-bottom pb-2">Assigned Ewes</h6>
+                        
+                        <div id="assigned-container-{{ ram.ear_tag_number }}" class="assigned-list mb-3" style="min-height: 50px;">
+                            </div>
+
+                        <div class="input-group input-group-sm mt-auto">
+                            <select class="form-select" id="select-add-{{ ram.ear_tag_number }}">
+                                <option value="">Select compatible ewe...</option>
+                                </select>
+                            <button class="btn btn-outline-success btn-add-manual" type="button" data-ram="{{ ram.ear_tag_number }}">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="card mt-4 border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0"><i class="bi bi-inbox"></i> Unassigned Ewes Pool</h4>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                <div id="unassigned-pool" class="row g-3">
+                    </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4 mb-5">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-check-circle-fill"></i> Save Assignments & Review
+            </button>
+        </div>
+    </form>
+</div>
+
+<script id="rams-data" type="application/json">{{ rams_json|safe }}</script>
+<script id="ewes-data" type="application/json">{{ ewes_json|safe }}</script>
+<script id="initial-assignments" type="application/json">{{ initial_assignments_json|safe }}</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Load Data
+    const rams = JSON.parse(document.getElementById('rams-data').textContent);
+    const ewes = JSON.parse(document.getElementById('ewes-data').textContent);
+    let assignments = JSON.parse(document.getElementById('initial-assignments').textContent);
+
+    // 2. Render State
+    function render() {
+        // Update Hidden Input
+        document.getElementById('breedingAssignments').value = JSON.stringify(assignments);
+
+        // --- Render Rams ---
+        rams.forEach(ram => {
+            const container = document.getElementById(`assigned-container-${ram.ear_tag}`);
+            const select = document.getElementById(`select-add-${ram.ear_tag}`);
+            const capacityBadge = document.getElementById(`capacity-badge-${ram.ear_tag}`);
+            
+            // Calculate usage
+            const currentAssigned = assignments[ram.ear_tag] || [];
+            const count = currentAssigned.length;
+            const remaining = ram.capacity - count;
+
+            // Update Badge
+            capacityBadge.textContent = `${count} / ${ram.capacity}`;
+            capacityBadge.className = remaining < 0 ? 'badge bg-danger' : 'badge bg-light text-primary';
+
+            // Clear Containers
+            container.innerHTML = '';
+            select.innerHTML = '<option value="">Select compatible ewe...</option>';
+
+            // Render Assigned Ewes
+            currentAssigned.forEach(eweId => {
+                const ewe = ewes[eweId];
+                if(!ewe) return;
+                
+                const div = document.createElement('div');
+                div.className = 'alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-2';
+                div.innerHTML = `
+                    <span><strong>${ewe.ear_tag}</strong> <small class="text-muted">(${ewe.breed})</small></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-btn" data-ram="${ram.ear_tag}" data-ewe="${ewe.ear_tag}">
+                        <i class="bi bi-dash"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+
+            // Populate Dropdown (Only compatible and currently unassigned ewes)
+            const allAssignedEwes = Object.values(assignments).flat();
+            
+            Object.values(ewes).forEach(ewe => {
+                const isAssigned = allAssignedEwes.includes(ewe.ear_tag);
+                const isCompatible = ewe.compatible_with.includes(ram.ear_tag);
+
+                if (!isAssigned && isCompatible) {
+                    const opt = document.createElement('option');
+                    opt.value = ewe.ear_tag;
+                    opt.textContent = `${ewe.ear_tag} (${ewe.breed})`;
+                    select.appendChild(opt);
+                }
+            });
+        });
+
+        // --- Render Unassigned Pool ---
+        const poolContainer = document.getElementById('unassigned-pool');
+        poolContainer.innerHTML = '';
+        
+        const allAssignedEwes = Object.values(assignments).flat();
+        
+        Object.values(ewes).forEach(ewe => {
+            if (allAssignedEwes.includes(ewe.ear_tag)) return; // Skip if assigned
+
+            const col = document.createElement('div');
+            col.className = 'col-md-4 col-lg-3';
+            
+            let buttonsHtml = '';
+            
+            if (ewe.compatible_with.length > 0) {
+                // Create buttons for compatible rams
+                ewe.compatible_with.forEach(ramId => {
+                    // Check capacity
+                    const ramCapacity = rams.find(r => r.ear_tag === ramId)?.capacity || 40;
+                    const ramCurrent = (assignments[ramId] || []).length;
+                    const isFull = ramCurrent >= ramCapacity;
+
+                    buttonsHtml += `
+                        <button type="button" 
+                                class="btn btn-sm ${isFull ? 'btn-outline-secondary' : 'btn-outline-primary'} assign-btn mb-1" 
+                                data-ram="${ramId}" 
+                                data-ewe="${ewe.ear_tag}"
+                                ${isFull ? 'disabled title="Ram Full"' : ''}>
+                            To ${ramId}
+                        </button>
+                    `;
+                });
+            } else {
+                buttonsHtml = '<small class="text-danger">Incompatible with selected rams</small>';
+            }
+
+            col.innerHTML = `
+                <div class="card h-100">
+                    <div class="card-body p-2 text-center">
+                        <div class="fw-bold">${ewe.ear_tag}</div>
+                        <div class="small text-muted mb-2">${ewe.breed} - ${ewe.type}</div>
+                        <div class="d-flex flex-wrap justify-content-center gap-1">
+                            ${buttonsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            poolContainer.appendChild(col);
+        });
+    }
+
+    // 3. Event Listeners
+    document.addEventListener('click', function(e) {
+        // Remove Ewe Button
+        if (e.target.closest('.remove-btn')) {
+            const btn = e.target.closest('.remove-btn');
+            const ramId = btn.dataset.ram;
+            const eweId = btn.dataset.ewe;
+            
+            // Logic
+            assignments[ramId] = assignments[ramId].filter(id => id !== eweId);
+            render();
+        }
+
+        // Add Ewe Button (Manual Dropdown)
+        if (e.target.closest('.btn-add-manual')) {
+            const btn = e.target.closest('.btn-add-manual');
+            const ramId = btn.dataset.ram;
+            const select = document.getElementById(`select-add-${ramId}`);
+            const eweId = select.value;
+
+            if (eweId) {
+                if (!assignments[ramId]) assignments[ramId] = [];
+                assignments[ramId].push(eweId);
+                render();
+            }
+        }
+
+        // Assign Button (from Pool)
+        if (e.target.closest('.assign-btn')) {
+            const btn = e.target.closest('.assign-btn');
+            const ramId = btn.dataset.ram;
+            const eweId = btn.dataset.ewe;
+
+            if (!assignments[ramId]) assignments[ramId] = [];
+            assignments[ramId].push(eweId);
+            render();
+        }
+    });
+
+    // Initial Render
+    render();
+});
+</script>
+{% endblock %}

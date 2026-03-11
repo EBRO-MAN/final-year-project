@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-secondary"><i class="bi bi-clock-history"></i> Breeding History</h2>
+            <p class="text-muted">Historical archive of all breeding assignments.</p>
+        </div>
+        <div>
+            <button onclick="generatePDF()" class="btn btn-outline-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+            <button onclick="generateExcel()" class="btn btn-outline-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+            <a href="{% url 'breeding_selection' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Cycle
+            </a>
+        </div>
+    </div>
+
+    <div id="printable-area">
+        {% if cycles %}
+            {% regroup cycles by start_date as date_list %}
+
+            {% for date_group in date_list %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        {{ date_group.grouper|date:"F j, Y" }}
+                    </h5>
+                    <span class="badge bg-light text-dark">{{ date_group.list|length }} Records</span>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Ram</th>
+                                    <th>Ewe</th>
+                                    <th>Expected Birth</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cycle in date_group.list %}
+                                <tr>
+                                    <td><small class="text-muted">{{ cycle.cycle_id }}</small></td>
+                                    <td>
+                                        <div class="fw-bold">{{ cycle.ram.ear_tag_number }}</div>
+                                        <small class="text-muted">{{ cycle.ram.breed }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ cycle.ewe.ear_tag_number }}</div>
+                                        <small class="text-muted">{{ cycle.ewe.breed }}</small>
+                                    </td>
+                                    <td>
+                                        {{ cycle.start_date|date:"M d, Y" }} 
+                                        <i class="bi bi-arrow-right-short text-muted"></i>
+                                        <strong>(+155 days)</strong>
+                                    </td>
+                                    <td>
+                                        {% if cycle.status == 'PLANNED' %}
+                                            <span class="badge bg-primary">Planned</span>
+                                        {% elif cycle.status == 'SUCCESS' %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ cycle.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+        {% else %}
+            <div class="text-center py-5 bg-light rounded">
+                <i class="bi bi-folder-x display-1 text-muted"></i>
+                <h4 class="mt-3 text-muted">No historical records found.</h4>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if cycles.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            
+            {% if cycles.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cycles.previous_page_number }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo; Previous</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&laquo; Previous</span>
+            </li>
+            {% endif %}
+
+            {% for i in cycles.paginator.page_range %}
+                {% if cycles.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if cycles.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cycles.next_page_number }}" aria-label="Next">
+                    <span aria-hidden="true">Next &raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Next &raquo;</span>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <div class="text-center text-muted small mt-2">
+            Showing {{ cycles.start_index }} - {{ cycles.end_index }} of {{ cycles.paginator.count }} records
+        </div>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+    function generatePDF() {
+        const element = document.getElementById('printable-area');
+        const opt = {
+            margin: 0.5,
+            filename: 'Breeding_History_Page_{{ cycles.number }}.pdf', // Added page number to filename
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+    // ... generateExcel function ...
+  function generateExcel() {
+        // Collect all data from all tables
+        let allRows = [];
+        
+        // Add header row
+        allRows.push(['Date Group', 'ID', 'Ram Tag', 'Ram Breed', 'Ewe Tag', 'Ewe Breed', 'Expected Birth', 'Status']);
+        
+        // Process each card/table
+        const cards = document.querySelectorAll('#printable-area .card');
+        
+        cards.forEach(card => {
+            const dateHeader = card.querySelector('.card-header h5');
+            const dateText = dateHeader ? dateHeader.textContent.replace('Event', '').trim() : '';
+            
+            const rows = card.querySelectorAll('table tbody tr');
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 5) {
+                    const rowData = [
+                        dateText,
+                        cells[0].textContent.trim(),
+                        cells[1].querySelector('.fw-bold').textContent.trim(),
+                        cells[1].querySelector('small').textContent.trim(),
+                        cells[2].querySelector('.fw-bold').textContent.trim(),
+                        cells[2].querySelector('small').textContent.trim(),
+                        cells[3].textContent.trim(),
+                        cells[4].textContent.trim()
+                    ];
+                    allRows.push(rowData);
+                }
+            });
+        });
+        
+        // Create worksheet and workbook
+        const ws = XLSX.utils.aoa_to_sheet(allRows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Breeding History');
+        
+        // Generate Excel file
+        const timestamp = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `Breeding_History_${timestamp}.xlsx`);
+    }
+</script>
+{% endblock %}

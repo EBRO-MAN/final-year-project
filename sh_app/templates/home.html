@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Design System variables should be defined in base.html for global use */
+    :root {
+        --primary-dark: #0f3d3e;   /* Deep Forest Green */
+        --primary-main: #2a9d8f;   /* Teal - Accent/Action */
+        --primary-light: #e9c46a;  /* Warm Yellow - Accent */
+        --accent-sky: #a8dadc;     /* Pale Blue - Light Backgrounds */
+        --bg-body: #f4f7f6;        /* Minty Grey Background */
+        --surface: #ffffff;        /* Card White */
+        --text-main: #264653;      /* Dark Blue-Grey Text */
+        --radius-md: 12px;
+        --shadow-lg: 0 10px 30px rgba(15, 61, 62, 0.1);
+    }
+
+    /* === LANDING PAGE STYLES === */
+    .section {
+        padding: 5rem 0;
+        background-color: var(--bg-body);
+    }
+    .section.features {
+        background-color: var(--surface);
+    }
+    .section.about {
+        background-color: var(--accent-sky);
+    }
+
+    .section-title h2 {
+        font-size: 2.5rem;
+        color: var(--primary-dark);
+        margin-bottom: 0.5rem;
+    }
+    .section-title h2::after {
+        background-color: var(--primary-main);
+    }
+    .btn-brand {
+        display: inline-block;
+        background-color: var(--primary-main);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(42, 157, 143, 0.4);
+    }
+    .btn-brand:hover {
+        background-color: var(--primary-dark);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* Hero Section */
+    .hero {
+        background-image: url("{% static 'images/photo_2025-11-23_14-19-01.jpg' %}");
+        background-size: cover;
+        background-position: center;
+        padding: 180px 20px 100px; /* More white space */
+        text-align: center;
+        margin-top: 0; /* Remove old margin */
+    }
+    .hero-content {
+        background: rgba(255, 255, 255, 0.85); /* Semi-transparent white overlay */
+        padding: 2.5rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .hero h2 {
+        font-size: 3rem;
+        color: var(--primary-dark);
+    }
+    .hero p {
+        color: var(--text-main);
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        background-color: var(--surface);
+        padding: 30px 20px;
+        border-radius: var(--radius-md);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        border-bottom: 5px solid var(--primary-main); /* Visual Anchor */
+    }
+    .feature-icon {
+        color: var(--primary-main);
+    }
+    .feature-card h3 {
+        color: var(--primary-dark);
+    }
+
+    /* Service Cards */
+    .service-card {
+        background-color: var(--surface);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+    .service-content h3 {
+        color: var(--primary-dark);
+    }
+    
+    /* Team Section */
+    .team-member {
+        transition: transform 0.3s;
+    }
+    .team-member:hover {
+        transform: translateY(-5px);
+    }
+    .member-img {
+        border: 5px solid var(--primary-main);
+    }
+
+    /* Footer */
+    .footer {
+        background-color: var(--primary-dark);
+    }
+    .footer-column h3 {
+        color: var(--primary-light);
+    }
+    .footer-column h3::after {
+        background-color: var(--primary-main);
+    }
+    .footer-bottom {
+        background-color: #0c3131; /* Darker variant */
+    }
+
+</style>
+
+
+{% if user.is_authenticated %}
+
+<div class="container-fluid py-5">
+    <h1 class="text-center fw-bold mb-4" style="color: var(--primary-dark);">Herd Inventory List</h1>
+
+    <div class="table-responsive shadow-sm rounded-3 bg-white">
+        <table class="table table-striped table-hover table-sm align-middle mb-0">
+            <thead class="table-dark" style="background-color: var(--primary-dark);">
+                <tr>
+                    <th scope="col">Ear Tag</th>
+                    <th scope="col">Breed</th>
+                    <th scope="col">Blood Level</th>
+                    <th scope="col">Sex</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Date of Birth</th>
+                    <th scope="col">Birth Weight</th>
+                    <th scope="col">Weaning Date</th>
+                    <th scope="col">Weaning Weight</th>
+                    <th scope="col">Parent Ewe</th>
+                    <th scope="col">Parent Ram</th>
+                    <th scope="col">Is Healthy</th>
+                    <th scope="col">Health Notes</th>
+                    <th scope="col">Flagged for Culling</th>
+                    <th scope="col">Culling Reason</th>
+                    <th scope="col">Created at</th>
+                    <th scope="col">Updated at</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if sheeps %}
+                    {% for sheep in sheeps %}
+                    <tr>
+                        <td> <a href="{% url 'record' sheep.ear_tag_number %}" class="text-decoration-none fw-bold" style="color: var(--primary-main);"> {{sheep.ear_tag_number }}</a> </td>
+                        <td>{{ sheep.breed }} </td>
+                        <td>{{ sheep.blood_level }}&percnt; </td>
+                        <td>{{ sheep.sex }} </td>
+                        <td>{{ sheep.type }} </td>
+                        <td>{{ sheep.date_of_birth }} </td>
+                        <td>{{ sheep.birth_weight }} kg </td>
+                        <td>{{ sheep.weaning_date|default:"N/A" }} </td>
+                        <td>{{ sheep.weaning_weight|default:"N/A" }} kg </td>
+                        <td>{{ sheep.parent_ewe|default:"N/A" }} </td>
+                        <td>{{ sheep.parent_ram|default:"N/A" }} </td>
+                        <td class="text-center">
+                            {% if sheep.is_healthy %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-octagon-fill text-danger"></i>{% endif %}
+                        </td>
+                        <td>{{ sheep.health_notes|default:"N/A" }} </td>
+                        <td class="text-center">
+                            {% if sheep.flagged_for_culling %}<i class="bi bi-flag-fill text-warning"></i>{% else %}<i class="bi bi-dash-circle text-muted"></i>{% endif %}
+                        </td>
+                        <td>{{ sheep.culling_reason|default:"N/A" }} </td>
+                        <td>{{ sheep.created_at|date:"Y-m-d" }} </td>
+                        <td>{{ sheep.updated_at|date:"Y-m-d" }} </td>
+                    </tr>
+                    {% endfor%}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% if not sheeps %}
+        <div class="alert alert-info text-center mt-4">
+            No sheep records found in the system.
+        </div>
+    {% endif %}
+</div>
+
+
+{% else %}
+
+<section class="hero" id="home">
+    <div class="container">
+        <div class="hero-content">
+            <h2 class="fw-bold">The Best Company For Sheep Multiplication & Breeding</h2>
+            <p class="fs-5">
+                We specialize in sustainable sheep breeding practices that ensure
+                healthy livestock and maximum productivity for farmers across the
+                region.
+            </p>
+            <a href="{% url 'login' %}" class="btn-brand shadow-lg mt-3">Login to System</a>
+        </div>
+    </div>
+</section>
+
+<section class="section features">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon mb-3"><i class="fas fa-dna fa-2x"></i></div>
+                    <h3>Genetic Selection</h3>
+                    <p class="small text-muted">
+                        We use advanced genetic selection techniques to breed superior
+                        sheep with desirable traits.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon mb-3"><i class="fas fa-heartbeat fa-2x"></i></div>
+                    <h3>Health Management</h3>
+                    <p class="small text-muted">
+                        Our comprehensive health management ensures all our sheep are in
+                        optimal condition.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon mb-3"><i class="fas fa-leaf fa-2x"></i></div>
+                    <h3>Sustainable Practices</h3>
+                    <p class="small text-muted">
+                        We implement eco-friendly and sustainable farming practices for a
+                        better future.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon mb-3"><i class="fas fa-graduation-cap fa-2x"></i></div>
+                    <h3>Farmer Education</h3>
+                    <p class="small text-muted">
+                        We provide training and resources to help farmers improve their
+                        sheep breeding techniques.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="services">
+    <div class="container">
+        <div class="section-title text-center">
+            <h2>Services We Provide</h2>
+            <p class="text-muted">
+                We offer comprehensive sheep breeding and multiplication services to
+                help farmers maximize their productivity and profitability.
+            </p>
+        </div>
+        <div class="row g-4 services-grid">
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="service-img ratio ratio-16x9"
+                        style="background-image: url('{% static 'images/photo_2025-11-22_15-26-00.jpg' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <div class="service-content">
+                        <h3>Sheep Multiplication</h3>
+                        <p class="small text-muted">
+                            Our specialized multiplication programs help rapidly increase
+                            your flock size with genetically superior animals.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="service-img ratio ratio-16x9"
+                        style="background-image: url('{% static 'images/photo_2025-11-22_15-26-00.jpg' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <div class="service-content">
+                        <h3>Breeding Programs</h3>
+                        <p class="small text-muted">
+                            Customized breeding programs designed to meet specific
+                            production goals and market demands.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="service-img ratio ratio-16x9"
+                        style="background-image: url('{% static 'images/photo_2025-11-22_15-26-00.jpg' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <div class="service-content">
+                        <h3>Genetic Selection</h3>
+                        <p class="small text-muted">
+                            Utilizing cutting-edge genetic selection techniques to enhance
+                            flock quality and performance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section about" id="about">
+    <div class="container">
+        <div class="row about-content align-items-center">
+            <div class="col-lg-6 about-text">
+                <h2 class="fw-bold text-dark">About Us</h2>
+                <p class="lead">
+                    With over 20 years of experience in sheep multiplication and
+                    breeding, we have established ourselves as leaders in the
+                    industry.
+                </p>
+                <p class="text-muted">
+                    Our commitment to quality, innovation, and sustainable
+                    practices sets us apart. We utilize state-of-the-art facilities and work with expert
+                    geneticists to ensure our breeding programs produce superior
+                    livestock that meet the highest standards of quality and
+                    productivity.
+                </p>
+                <a href="#contact" class="btn-brand btn-sm mt-3">Learn More</a>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="about-image shadow-lg"
+                    style="height: 400px; border-radius: var(--radius-md); background-image: url('{% static 'images/photo_2025-11-22_15-26-00.jpg' %}'); background-size: cover; background-position: center;">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="team">
+    <div class="container">
+        <div class="section-title text-center">
+            <h2>Our Professional Team</h2>
+            <p class="text-muted">
+                Meet our team of experienced professionals dedicated to excellence
+                in sheep breeding and multiplication.
+            </p>
+        </div>
+        <div class="row g-4 team-grid">
+            <div class="col-md-3">
+                <div class="team-member">
+                    <div class="member-img ratio ratio-1x1 mb-3"
+                        style="width: 150px; margin: 0 auto 15px; border-radius: 50%; background-image: url('{% static 'images/images.png' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <h5 class="fw-bold">Dr. Name</h5>
+                    <p class="text-muted small">Lead Geneticist</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="team-member">
+                    <div class="member-img ratio ratio-1x1 mb-3"
+                        style="width: 150px; margin: 0 auto 15px; border-radius: 50%; background-image: url('{% static 'images/images.png' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <h5 class="fw-bold">Name Surname</h5>
+                    <p class="text-muted small">Veterinary Specialist</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="team-member">
+                    <div class="member-img ratio ratio-1x1 mb-3"
+                        style="width: 150px; margin: 0 auto 15px; border-radius: 50%; background-image: url('{% static 'images/images.png' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <h5 class="fw-bold">Name</h5>
+                    <p class="text-muted small">Breeding Program Manager</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="team-member">
+                    <div class="member-img ratio ratio-1x1 mb-3"
+                        style="width: 150px; margin: 0 auto 15px; border-radius: 50%; background-image: url('{% static 'images/download.jpg' %}'); background-size: cover; background-position: center;">
+                    </div>
+                    <h5 class="fw-bold">Name</h5>
+                    <p class="text-muted small">Farm Operations Director</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section contact" id="contact" style="background-color: var(--accent-sky);">
+    <div class="container">
+        <div class="section-title text-center">
+            <h2>Connect With Us</h2>
+            <p class="text-muted">
+                Get in touch with us to learn more about our sheep multiplication
+                and breeding services.
+            </p>
+        </div>
+        <div class="row contact-content g-5 mt-4">
+            <div class="col-lg-6 contact-info">
+                <h3 class="fw-bold mb-4" style="color: var(--primary-dark);">Get In Touch</h3>
+                <div class="contact-details">
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="fas fa-map-marker-alt fa-lg me-3 mt-1" style="color: var(--primary-main);"></i>
+                        <div>
+                            <h5 class="mb-0">Address</h5>
+                            <p class="text-muted">
+                                Debre Berhan, Ethiopia, near to Ankober Road
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="fas fa-phone fa-lg me-3 mt-1" style="color: var(--primary-main);"></i>
+                        <div>
+                            <h5 class="mb-0">Phone</h5>
+                            <p class="text-muted">+(251) 11681-xxxx / +(251) 11681-xxxx</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="far fa-envelope fa-lg me-3 mt-1" style="color: var(--primary-main);"></i>
+                        <div>
+                            <h5 class="mb-0">Email</h5>
+                            <p class="text-muted">dbsheepsupport@mail.com<br />dbinfo@sheepbreeding.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 contact-form">
+                <form class="p-4 bg-white rounded shadow-sm">
+                    <h4 class="mb-3" style="color: var(--primary-dark);">Send a Message</h4>
+                    <div class="mb-3">
+                        <input type="text" id="name" class="form-control" placeholder="Your Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <input type="email" id="email" class="form-control" placeholder="Your Email" required />
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="subject" class="form-control" placeholder="Subject" required />
+                    </div>
+                    <div class="mb-3">
+                        <textarea id="message" class="form-control" rows="5" placeholder="Your Message" required></textarea>
+                    </div>
+                    <button type="submit" class="btn-brand w-100">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // MOBILE MENU TOGGLE LOGIC (Restored from your original home.html)
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
+        const navMenu = document.querySelector(".nav-menu");
+        
+        if (mobileMenuBtn && navMenu) {
+            mobileMenuBtn.addEventListener("click", function () {
+                navMenu.classList.toggle("active");
+            });
+        }
+        
+        // Smooth Scrolling for Anchor Links (Restored from your original home.html)
+        document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+            anchor.addEventListener("click", function (e) {
+                e.preventDefault();
+
+                const targetId = this.getAttribute("href");
+                if (targetId === "#") return;
+
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    // Offset to account for the sticky header (assumed 80px height)
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80, 
+                        behavior: "smooth",
+                    });
+
+                    // Close mobile menu if open
+                    if (navMenu) {
+                        navMenu.classList.remove("active");
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+{% endif %}
+{% endblock %}
