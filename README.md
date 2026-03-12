@@ -75,7 +75,6 @@ python manage.py runserver
 - `POST /sheep/` – Add new sheep (role-based permission required)  
 
 
-
 ## 🧪 Testing
 
 ```bash
@@ -96,15 +95,15 @@ Contributions are welcome!
 5. Open a Pull Request  
 
 
-## 📜 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## 👨‍💻 Authors
 
-
-
-## 👨‍💻 Author
-
-Developed by **[Ebrahim](https://github.com/EBRO-MAN)**  
+Developed by 
+        Ebrahim Abdulwehab
+        Afewerk Alemu
+        Fikre G/kidan
+        Kefelegn Habtamu
+        Yehualawerk Mekonnen
 Passionate about backend development, authentication systems, and scalable architectures.
 
 
