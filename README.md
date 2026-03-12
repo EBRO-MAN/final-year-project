@@ -98,13 +98,13 @@ Contributions are welcome!
 
 ## 👨‍💻 Authors
 
-Developed by 
+Developed by DBU Computer Science Students
         Ebrahim Abdulwehab
         Afewerk Alemu
         Fikre G/kidan
         Kefelegn Habtamu
         Yehualawerk Mekonnen
-Passionate about backend development, authentication systems, and scalable architectures.
+
 
 
 
